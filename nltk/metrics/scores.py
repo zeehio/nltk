@@ -11,6 +11,7 @@ from math import fabs
 import operator
 from random import shuffle
 from functools import reduce
+from itertools import zip_longest
 
 try:
     from scipy.stats.stats import betai
@@ -19,6 +20,22 @@ except ImportError:
 
 from nltk.compat import xrange, izip
 from nltk.util import LazyConcatenation, LazyMap
+
+
+def _zip_equal(*iterables):
+    """
+    This function zips iterables. If any of the iterables is shorter
+    than the rest, it raises an error
+
+    :type *iterables: list
+    :param *iterables: An ordered list of reference values.
+    """
+    sentinel = object()
+    for combo in zip_longest(*iterables, fillvalue=sentinel):
+        if sentinel in combo:
+            raise ValueError('Iterables have different lengths')
+        yield combo
+
 
 def accuracy(reference, test):
     """
@@ -35,9 +52,11 @@ def accuracy(reference, test):
     :raise ValueError: If ``reference`` and ``length`` do not have the
         same length.
     """
-    if len(reference) != len(test):
-        raise ValueError("Lists must have the same length.")
-    return float(sum(x == y for x, y in izip(reference, test))) / len(test)
+    correct = 0
+    for count, (x, y) in enumerate(_zip_equal(reference, test)):
+        if x == y:
+            correct += 1
+    return float(correct)/count
 
 def precision(reference, test):
     """

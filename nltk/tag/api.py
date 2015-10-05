@@ -15,6 +15,9 @@ from nltk.metrics import accuracy
 
 from nltk.tag.util import untag
 
+from itertools import chain, tee
+
+
 class TaggerI(object):
     """
     A processing interface for assigning a tag to each token in a list.
@@ -46,9 +49,9 @@ class TaggerI(object):
         """
         Apply ``self.tag()`` to each element of *sentences*.  I.e.:
 
-            return [self.tag(sent) for sent in sentences]
+            return (self.tag(sent) for sent in sentences)
         """
-        return [self.tag(sent) for sent in sentences]
+        return (self.tag(sent) for sent in sentences)
 
     def evaluate(self, gold):
         """
@@ -60,10 +63,10 @@ class TaggerI(object):
         :param gold: The list of tagged sentences to score the tagger on.
         :rtype: float
         """
-
-        tagged_sents = self.tag_sents(untag(sent) for sent in gold)
-        gold_tokens = sum(gold, [])
-        test_tokens = sum(tagged_sents, [])
+        (gold1, gold2) = tee(gold, 2)
+        tagged_sents = self.tag_sents(untag(sent) for sent in gold1)
+        gold_tokens = chain.from_iterable(gold2)
+        test_tokens = chain.from_iterable(tagged_sents)
         return accuracy(gold_tokens, test_tokens)
 
     def _check_params(self, train, model):
